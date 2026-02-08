@@ -4,7 +4,7 @@ export const TOLA_TO_GRAMS = 11.6638;
 
 // OPTIONAL: Paste your GitHub Gist "Raw" URL here to update prices without redeploying.
 // Example: "https://gist.githubusercontent.com/your-user/abc123/raw/prices.json"
-export const REMOTE_PRICES_URL = "https://gist.githubusercontent.com/yubchy64/765beb083978caf7b482a743371130dd/raw/d9ef284248d109d18c843865906566da92c5545e/prices.%2520json"; 
+export const REMOTE_PRICES_URL = "https://gist.githubusercontent.com/yubchy64/eebe394167ab55244231d82f6235a5a7/raw/5f36a224d2d9bd87da764b41f0cd2331611df82a/prices.json"; 
 
 // Helper to format date for chart (e.g., "Feb 15")
 export const formatDate = (date: Date): string => {
