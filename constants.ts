@@ -2,9 +2,10 @@ import { HistoricalDataPoint } from "./types";
 
 export const TOLA_TO_GRAMS = 11.6638;
 
-// OPTIONAL: Paste your GitHub Gist "Raw" URL here to update prices without redeploying.
-// Example: "https://gist.githubusercontent.com/your-user/abc123/raw/prices.json"
-export const REMOTE_PRICES_URL = "https://gist.githubusercontent.com/yubchy64/eebe394167ab55244231d82f6235a5a7/raw/5f36a224d2d9bd87da764b41f0cd2331611df82a/prices.json"; 
+// URL for live prices JSON (auto-updated daily by FENEGOSIDA scraper via GitHub Actions)
+// Uses raw.githubusercontent.com to avoid CORS issues
+// Replace "goldsilvernepal" with your actual GitHub repo path after pushing
+export const LIVE_PRICES_URL = "https://raw.githubusercontent.com/yubchy64/goldsilvernepal/main/data/live-prices.json";
 
 // Helper to format date for chart (e.g., "Feb 15")
 export const formatDate = (date: Date): string => {

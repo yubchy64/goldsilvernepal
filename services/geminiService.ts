@@ -1,35 +1,53 @@
-import { ServiceResponse, PriceData } from "../types";
+import { ServiceResponse } from "../types";
 import { DAILY_PRICES } from "../data/prices";
-import { REMOTE_PRICES_URL } from "../constants";
+import { LIVE_PRICES_URL } from "../constants";
 
-export const fetchLivePrices = async (): Promise<ServiceResponse> => {
-  // 1. Try to fetch from remote URL if configured
-  if (REMOTE_PRICES_URL) {
-    try {
-      const response = await fetch(REMOTE_PRICES_URL + '?t=' + new Date().getTime()); // Add timestamp to bust cache
-      if (response.ok) {
-        const remoteData = await response.json();
-        
-        // Simple validation to ensure the JSON has correct fields
-        if (remoteData.fineGoldPerTola && remoteData.silverPerTola && remoteData.lastUpdated) {
-           return {
-            data: {
-              fineGoldPerTola: Number(remoteData.fineGoldPerTola),
-              silverPerTola: Number(remoteData.silverPerTola),
-              lastUpdated: String(remoteData.lastUpdated),
-            },
-            sources: [{ web: { uri: REMOTE_PRICES_URL, title: "Remote Config" } }],
-            error: undefined,
-          };
-        }
+/**
+ * Try fetching prices from a given URL
+ */
+const fetchPricesFromURL = async (url: string, sourceTitle: string): Promise<ServiceResponse | null> => {
+  try {
+    const response = await fetch(url + '?t=' + new Date().getTime(), {
+      signal: AbortSignal.timeout(8000),
+    });
+    if (response.ok) {
+      const data = await response.json();
+      if (data.fineGoldPerTola && data.silverPerTola && data.lastUpdated) {
+        return {
+          data: {
+            fineGoldPerTola: Number(data.fineGoldPerTola),
+            silverPerTola: Number(data.silverPerTola),
+            lastUpdated: String(data.lastUpdated),
+          },
+          sources: [{ web: { uri: "https://fenegosida.org/", title: sourceTitle } }],
+          error: undefined,
+        };
       }
-    } catch (err) {
-      console.warn("Failed to fetch remote prices, falling back to local.", err);
     }
+  } catch {
+    console.warn(`Failed to fetch from ${url}`);
   }
+  return null;
+};
 
-  // 2. Fallback to Local Data (Simulate network delay)
-  await new Promise(resolve => setTimeout(resolve, 600));
+/**
+ * Main function: Fetch live prices with cascading fallbacks
+ *
+ * 1. GitHub-hosted JSON (auto-updated from FENEGOSIDA by GitHub Actions)
+ * 2. Local /data/live-prices.json (same repo, works in dev without push)
+ * 3. Hardcoded fallback data (data/prices.ts)
+ */
+export const fetchLivePrices = async (): Promise<ServiceResponse> => {
+  // 1. Try GitHub-hosted live prices
+  const liveResult = await fetchPricesFromURL(LIVE_PRICES_URL, "FENEGOSIDA");
+  if (liveResult?.data) return liveResult;
+
+  // 2. Try local live-prices.json (works in dev / same-origin)
+  const localResult = await fetchPricesFromURL('/data/live-prices.json', "FENEGOSIDA");
+  if (localResult?.data) return localResult;
+
+  // 3. Fallback to hardcoded data
+  await new Promise(resolve => setTimeout(resolve, 300));
 
   return {
     data: {
@@ -37,7 +55,7 @@ export const fetchLivePrices = async (): Promise<ServiceResponse> => {
       silverPerTola: DAILY_PRICES.silverPerTola,
       lastUpdated: DAILY_PRICES.lastUpdated,
     },
-    sources: [], // No external web sources in manual mode
+    sources: [],
     error: undefined,
   };
 };
