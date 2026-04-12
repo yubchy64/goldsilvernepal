@@ -2,7 +2,8 @@
 Scrape today's gold and silver prices from FENEGOSIDA
 and save as a JSON file for the web app to consume.
 
-Based on the approach from: https://github.com/ChandanShakya/goldmandu
+The FENEGOSIDA rate-history.php page always shows today's prices
+in the header section. We simply GET the page and parse the prices.
 """
 
 import json
@@ -10,141 +11,139 @@ import re
 import requests
 from datetime import datetime
 
-FENEGOSIDA_URL = "http://www.fenegosida.org/rate-history.php"
-OUTPUT_FILE = "data/live-prices.json"
-
-# Nepali month names used by FENEGOSIDA
-NEPALI_MONTHS = [
-    "Baisakh", "Jestha", "Ashad", "Shrawan",
-    "Bhadra", "Ashoj", "Kartik", "Mansir",
-    "Poush", "Magh", "Falgun", "Chaitra"
+# URLs to try (in order of preference)
+URLS_TO_TRY = [
+    "https://fenegosida.org/rate-history.php",
+    "https://www.fenegosida.org/rate-history.php",
 ]
 
-# Nepali New Year is around mid-April
-# Rough mapping: AD month -> likely BS month index (0-based)
-AD_TO_BS_MONTH_APPROX = {
-    1: 9,   # Jan  -> Poush
-    2: 10,  # Feb  -> Magh
-    3: 10,  # Mar  -> Falgun
-    4: 0,   # Apr  -> Chaitra/Baisakh (transition)
-    5: 0,   # May  -> Baisakh/Jestha
-    6: 1,   # Jun  -> Jestha/Ashad
-    7: 2,   # Jul  -> Ashad/Shrawan
-    8: 3,   # Aug  -> Shrawan/Bhadra
-    9: 4,   # Sep  -> Bhadra/Ashoj
-    10: 5,  # Oct  -> Ashoj/Kartik
-    11: 6,  # Nov  -> Kartik/Mansir
-    12: 8,  # Dec  -> Mansir/Poush
-}
+OUTPUT_FILE = "data/live-prices.json"
 
 
-def get_current_nepali_year():
-    """Approximate current Nepali year (BS ~ AD + 57)."""
-    now = datetime.now()
-    return now.year + 57
-
-
-def scrape_fenegosida(year, month):
-    """POST to FENEGOSIDA rate-history page and return HTML."""
+def fetch_page():
+    """GET the FENEGOSIDA rate-history page, trying multiple URLs."""
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Content-Type': 'application/x-www-form-urlencoded',
-    }
-    payload = {
-        'year': str(year),
-        'month': month,
-        'submit': 'Submit'
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
     }
 
-    response = requests.post(FENEGOSIDA_URL, data=payload, headers=headers, timeout=30)
-    response.raise_for_status()
-    return response.text
-
-
-def parse_tola_table(html):
-    """Extract per-tola prices from the first table_rate_month in HTML."""
-    pattern = r'<th>(\d+)</th><td>FINE GOLD \(9999\):\s*<b>([\d,]+\.?\d*)</b>.*?Silver:\s*<b>([\d,]+\.?\d*)</b>'
-    matches = re.findall(pattern, html, re.DOTALL)
-
-    results = []
-    for day, gold_str, silver_str in matches:
-        gold = float(gold_str.replace(',', ''))
-        silver = float(silver_str.replace(',', ''))
-        results.append({
-            'day': int(day),
-            'fineGoldPerTola': gold,
-            'silverPerTola': silver,
-        })
-
-    return results
-
-
-def get_latest_prices():
-    """
-    Smart scraping: start from the current Nepali month and work backwards
-    until we find data. Returns the most recent day's prices.
-    """
-    nepali_year = get_current_nepali_year()
-    start_month_idx = AD_TO_BS_MONTH_APPROX.get(datetime.now().month, 0)
-
-    # Try current and previous months in both current and previous years
-    attempts = []
-    for year_offset in range(2):
-        year = nepali_year - year_offset
-        # Start from likely current month, go backwards
-        for offset in range(12):
-            month_idx = (start_month_idx - offset) % 12
-            # If we wrapped around to a higher index, we're in the previous year
-            actual_year = year if (start_month_idx - offset) >= 0 else year - 1
-            if actual_year != year:
-                continue  # Skip, will be covered by year_offset loop
-            attempts.append((actual_year, NEPALI_MONTHS[month_idx]))
-
-    for year, month in attempts:
+    last_error = None
+    for url in URLS_TO_TRY:
         try:
-            print(f"  Trying {year} {month}...")
-            html = scrape_fenegosida(year, month)
-            prices = parse_tola_table(html)
-            if prices:
-                latest = max(prices, key=lambda x: x['day'])
-                latest['month'] = month
-                latest['year'] = year
-                return latest
+            print(f"  Trying URL: {url}")
+            response = requests.get(url, headers=headers, timeout=30, allow_redirects=True)
+            print(f"  Status: {response.status_code}, Final URL: {response.url}, Length: {len(response.text)}")
+
+            if response.status_code == 200 and len(response.text) > 2000:
+                return response.text
+            else:
+                print(f"  Response too short or wrong status, trying next...")
+        except requests.exceptions.ConnectionError as e:
+            print(f"  Connection error: {e}")
+            last_error = e
+        except requests.exceptions.Timeout as e:
+            print(f"  Timeout: {e}")
+            last_error = e
         except Exception as e:
             print(f"  Failed: {e}")
-            continue
+            last_error = e
 
+    raise last_error if last_error else Exception("All URLs failed")
+
+
+def extract_price(div_text):
+    """Extract the numeric price from a div's <b> tag."""
+    match = re.search(r'<b>([^<]+)</b>', div_text)
+    if match:
+        return float(match.group(1).replace(',', ''))
     return None
 
 
-def main():
-    print("Scraping FENEGOSIDA for latest gold & silver prices...")
+def parse_todays_prices(html):
+    """
+    Parse today's prices from the FENEGOSIDA page header.
 
-    result = get_latest_prices()
-    if not result:
-        print("ERROR: Could not scrape any prices!")
-        exit(1)
+    The page header has two vtab sections:
+    - Tab 1 (gms): per 10 gram prices
+    - Tab 2 (tola): per 1 tola prices
+
+    Only divs with class "post" have today's live prices.
+    Divs without "post" are for query results and are empty.
+
+    Gold divs order: [0]=Fine Gold per 10gm, [1]=Tejabi per 10gm,
+                     [2]=Fine Gold per tola, [3]=Tejabi per tola
+    Silver divs order: [0]=Silver per 10gm, [1]=Silver per tola
+
+    Date is in:
+      <div class="rate-date-day">29</div>
+      <div class="rate-date-month">Chaitra</div>
+      <div class="rate-date-year">2082</div>
+    """
+    # Find all rate-gold post divs
+    gold_divs = re.findall(r'<div class="rate-gold post">(.*?)</div>', html, re.DOTALL)
+
+    # Find all rate-silver post divs
+    silver_divs = re.findall(r'<div class="rate-silver post">(.*?)</div>', html, re.DOTALL)
+
+    print(f"  Found {len(gold_divs)} gold divs, {len(silver_divs)} silver divs")
+
+    if len(gold_divs) < 2 or len(silver_divs) < 2:
+        raise ValueError(f"Expected at least 2 gold and 2 silver divs, got {len(gold_divs)} and {len(silver_divs)}")
+
+    gold_tola = extract_price(gold_divs[2])
+    silver_tola = extract_price(silver_divs[1])
+    gold_10gm = extract_price(gold_divs[0])
+    silver_10gm = extract_price(silver_divs[0])
+
+    # Extract the Nepali date
+    day_match = re.search(r'rate-date-day[^>]*>(\d+)<', html)
+    month_match = re.search(r'rate-date-month[^>]*>([^<]+)<', html)
+    year_match = re.search(r'rate-date-year[^>]*>([^<]+)<', html)
+
+    if not gold_tola or not silver_tola:
+        raise ValueError(f"Could not parse prices: gold_tola={gold_tola}, silver_tola={silver_tola}")
+
+    result = {
+        'fineGoldPerTola': gold_tola,
+        'silverPerTola': silver_tola,
+        'fineGoldPer10Gram': gold_10gm,
+        'silverPer10Gram': silver_10gm,
+        'nepaliDay': day_match.group(1) if day_match else None,
+        'nepaliMonth': month_match.group(1).strip() if month_match else None,
+        'nepaliYear': year_match.group(1).strip() if year_match else None,
+    }
+
+    return result
+
+
+def main():
+    print("Scraping FENEGOSIDA for today's gold & silver prices...")
+
+    html = fetch_page()
+    result = parse_todays_prices(html)
 
     today_str = datetime.now().strftime('%Y-%m-%d')
 
     output = {
         "fineGoldPerTola": result['fineGoldPerTola'],
         "silverPerTola": result['silverPerTola'],
-        "fineGoldPer10Gram": round(result['fineGoldPerTola'] / 11.6638 * 10, 2),
-        "silverPer10Gram": round(result['silverPerTola'] / 11.6638 * 10, 2),
+        "fineGoldPer10Gram": result['fineGoldPer10Gram'] or round(result['fineGoldPerTola'] / 11.6638 * 10, 2),
+        "silverPer10Gram": result['silverPer10Gram'] or round(result['silverPerTola'] / 11.6638 * 10, 2),
         "lastUpdated": today_str,
         "source": "FENEGOSIDA",
-        "nepaliDate": f"{result['year']} {result['month']} {result['day']}"
+        "nepaliDate": f"{result['nepaliYear']} {result['nepaliMonth']} {result['nepaliDay']}"
     }
 
     with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
         json.dump(output, f, indent=2, ensure_ascii=False)
 
     print(f"\nSuccess! Prices saved to {OUTPUT_FILE}")
-    print(f"  Fine Gold (per tola): NPR {output['fineGoldPerTola']:,.0f}")
-    print(f"  Silver (per tola):    NPR {output['silverPerTola']:,.0f}")
-    print(f"  Last Updated:         {output['lastUpdated']}")
-    print(f"  Nepali Date:          {output['nepaliDate']}")
+    print(f"  Fine Gold (per tola):  NPR {output['fineGoldPerTola']:,.0f}")
+    print(f"  Silver (per tola):     NPR {output['silverPerTola']:,.0f}")
+    print(f"  Fine Gold (per 10gm):  NPR {output['fineGoldPer10Gram']:,.0f}")
+    print(f"  Silver (per 10gm):     NPR {output['silverPer10Gram']:,.2f}")
+    print(f"  Last Updated:          {output['lastUpdated']}")
+    print(f"  Nepali Date:           {output['nepaliDate']}")
 
 
 if __name__ == "__main__":
