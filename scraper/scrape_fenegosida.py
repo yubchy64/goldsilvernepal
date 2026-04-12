@@ -10,7 +10,7 @@ import re
 import requests
 from datetime import datetime
 
-FENEGOSIDA_URL = "https://www.fenegosida.org/rate-history.php"
+FENEGOSIDA_URL = "http://www.fenegosida.org/rate-history.php"
 OUTPUT_FILE = "data/live-prices.json"
 
 # Nepali month names used by FENEGOSIDA
