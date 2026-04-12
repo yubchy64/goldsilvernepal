@@ -1,0 +1,35 @@
+name: Update Gold & Silver Prices
+
+on:
+  schedule:
+    # Run daily at 11:00 AM Nepal Time (NPT = UTC+5:45)
+    # 11:00 AM NPT = 5:15 AM UTC
+    - cron: '15 5 * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: pip install -r scraper/requirements.txt
+
+      - name: Run scraper
+        run: python scraper/scrape_fenegosida.py
+
+      - name: Commit updated prices
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add data/live-prices.json
+          git diff --quiet && git diff --staged --quiet || (git commit -m "Update gold & silver prices [skip ci]" && git push)
