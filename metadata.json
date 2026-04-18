@@ -1,0 +1,5 @@
+{
+  "name": "Nepal Gold & Silver Tracker",
+  "description": "Real-time tracking of Gold and Silver prices in Nepal using manual updates and remote configuration.",
+  "requestFramePermissions": []
+}

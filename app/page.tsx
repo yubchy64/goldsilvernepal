@@ -1,5 +1,5 @@
 import { fetchLivePrices } from '../services/geminiService';
-import AppClient from '../AppClient';
+import AppClient from './AppClient';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
