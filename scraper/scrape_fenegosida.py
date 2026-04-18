@@ -18,6 +18,8 @@ URLS_TO_TRY = [
 ]
 
 OUTPUT_FILE = "data/live-prices.json"
+HISTORY_FILE = "public/data/price-history.json"
+MAX_HISTORY_DAYS = 30
 
 
 def fetch_page():
@@ -116,6 +118,53 @@ def parse_todays_prices(html):
     return result
 
 
+def load_history():
+    """Load existing price history from file."""
+    try:
+        with open(HISTORY_FILE, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return []
+
+
+def save_history(history):
+    """Save price history to file, keeping only last MAX_HISTORY_DAYS entries."""
+    # Sort by date (oldest first)
+    history.sort(key=lambda x: x['date'])
+    # Keep only last N days
+    if len(history) > MAX_HISTORY_DAYS:
+        history = history[-MAX_HISTORY_DAYS:]
+    with open(HISTORY_FILE, 'w', encoding='utf-8') as f:
+        json.dump(history, f, indent=2, ensure_ascii=False)
+
+
+def update_history(gold_price, silver_price, date_str):
+    """Update price history with today's prices."""
+    history = load_history()
+
+    # Check if entry for today already exists
+    existing_entry = next((h for h in history if h['date'] == date_str), None)
+
+    new_entry = {
+        "date": date_str,
+        "gold": int(gold_price),
+        "silver": int(silver_price),
+        "source": "FENEGOSIDA"
+    }
+
+    if existing_entry:
+        # Update existing entry
+        existing_entry.update(new_entry)
+        print(f"  Updated existing entry for {date_str}")
+    else:
+        # Add new entry
+        history.append(new_entry)
+        print(f"  Added new entry for {date_str}")
+
+    save_history(history)
+    print(f"  History saved to {HISTORY_FILE} ({len(history)} entries)")
+
+
 def main():
     print("Scraping FENEGOSIDA for today's gold & silver prices...")
 
@@ -144,6 +193,10 @@ def main():
     print(f"  Silver (per 10gm):     NPR {output['silverPer10Gram']:,.2f}")
     print(f"  Last Updated:          {output['lastUpdated']}")
     print(f"  Nepali Date:           {output['nepaliDate']}")
+
+    # Update price history
+    print("\nUpdating price history...")
+    update_history(result['fineGoldPerTola'], result['silverPerTola'], today_str)
 
 
 if __name__ == "__main__":

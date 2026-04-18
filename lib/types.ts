@@ -2,7 +2,6 @@ export interface PriceData {
   fineGoldPerTola: number;
   silverPerTola: number;
   lastUpdated: string;
-  nepaliDate?: string;
 }
 
 export interface ConvertedPrice {

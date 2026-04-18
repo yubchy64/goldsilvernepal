@@ -13,5 +13,7 @@
 export const DAILY_PRICES = {
     fineGoldPerTola: 296900,    // Fine Gold Price (NPR per Tola)
     silverPerTola: 4960,        // Silver Price (NPR per Tola)
-    lastUpdated: "2026-04-11"   // Date (YYYY-MM-DD)
+    lastUpdated: "2026-04-18",  // Date (YYYY-MM-DD)
+    nepaliDate: "2083 Baishakh 5" // Nepali Date
   };
+

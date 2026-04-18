@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+Disallow: /node_modules/
+Disallow: /dist/
+Disallow: /.env*
+Disallow: /api/
+
+Sitemap: https://goldsilvernepal.vercel.app/sitemap.xml
