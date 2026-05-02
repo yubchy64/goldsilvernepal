@@ -27,10 +27,10 @@ export const metadata: Metadata = {
     description: 'Track live gold price in Nepal today. Get real-time 24K Fine Gold and silver rates per tola.',
   },
   alternates: {
-    canonical: 'https://goldsilvernepal.vercel.app',
+    canonical: 'https://gold.yubrajchaudhary.com.np/',
     languages: {
-      en: 'https://goldsilvernepal.vercel.app',
-      ne: 'https://goldsilvernepal.vercel.app',
+      en: 'https://gold.yubrajchaudhary.com.np/',
+      ne: 'https://gold.yubrajchaudhary.com.np/',
     },
   },
   icons: {
