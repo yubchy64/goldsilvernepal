@@ -150,6 +150,10 @@ export async function GET(request: Request) {
         realEntries: result.filter(r => realHistory.some(h => h.date === r.date)).length,
         simulatedEntries: result.filter(r => !realHistory.some(h => h.date === r.date)).length
       }
+    }, {
+      headers: {
+        'Link': '</.well-known/api-catalog>; rel="api-catalog"',
+      },
     });
   } catch (error) {
     console.error('History API error:', error);
