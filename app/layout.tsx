@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
+import WebMCPProvider from './components/WebMCPProvider';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -52,6 +53,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={inter.variable}>
       <body className={`${inter.className} min-h-screen bg-[#f9f9f9] text-gray-900 antialiased`}>
+        <WebMCPProvider />
         {children}
       </body>
     </html>
