@@ -9,21 +9,11 @@ const LINK_HEADERS = [
 
 export function middleware(request: NextRequest) {
   const url = request.nextUrl.pathname;
-  
-  // Add Link headers to homepage response
-  if (url === '/') {
-    const response = NextResponse.next();
-    LINK_HEADERS.forEach(header => {
-      response.headers.append('Link', header);
-    });
-    return response;
-  }
-  
   const acceptHeader = request.headers.get('accept') || '';
+  const wantsMarkdown = acceptHeader.includes('text/markdown');
   
-  if (acceptHeader.includes('text/markdown')) {
-    const url = request.nextUrl.pathname;
-    
+  // Handle markdown requests (applies to all paths including homepage)
+  if (wantsMarkdown) {
     // Exclude Next.js internals, APIs, and static files
     if (
       url.startsWith('/_next') ||
@@ -36,7 +26,16 @@ export function middleware(request: NextRequest) {
     // Rewrite to our markdown API handler
     return NextResponse.rewrite(new URL(`/api/markdown?path=${encodeURIComponent(url)}`, request.url));
   }
-
+  
+  // Add Link headers to homepage response (only for non-markdown requests)
+  if (url === '/') {
+    const response = NextResponse.next();
+    LINK_HEADERS.forEach(header => {
+      response.headers.append('Link', header);
+    });
+    return response;
+  }
+  
   return NextResponse.next();
 }
 
