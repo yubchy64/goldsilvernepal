@@ -6,6 +6,6 @@ Disallow: /dist/
 Disallow: /.env*
 Disallow: /api/
 
-Sitemap: https://goldsilvernepal.vercel.app/sitemap.xml
+Sitemap: https://gold.yubrajchaudhary.com.np/sitemap.xml
 
 Content-Signal: ai-train=no, search=yes, ai-input=no
