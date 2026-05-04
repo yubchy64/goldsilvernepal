@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import WebMCPProvider from './components/WebMCPProvider';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -55,6 +56,7 @@ export default function RootLayout({
       <body className={`${inter.className} min-h-screen bg-[#f9f9f9] text-gray-900 antialiased`}>
         <WebMCPProvider />
         {children}
+        <SpeedInsights />
       </body>
     </html>
   );
