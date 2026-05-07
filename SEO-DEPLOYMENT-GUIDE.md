@@ -10,11 +10,11 @@ Replace all placeholder URLs with your actual domain name:
 
 **Files to update:**
 
-- `public/robots.txt` - Replace `https://goldsilvernepal.vercel.app` with your actual domain
-- `public/sitemap.xml` - Replace `https://goldsilvernepal.vercel.app` with your actual domain
-- `index.html` - Replace `https://goldsilvernepal.vercel.app` in canonical tag and schema markup
+- `public/robots.txt` - Replace `https://gold.yubrajchaudhary.com.np` with your actual domain
+- `public/sitemap.xml` - Replace `https://gold.yubrajchaudhary.com.np` with your actual domain
+- `index.html` - Replace `https://gold.yubrajchaudhary.com.np` in canonical tag and schema markup
 - `index.html` - Update email in Organization schema: `yubraj.dev.np@gmail.com`
-- `index.html` - Update logo URL in Organization schema: `https://goldsilvernepal.vercel.app/logo.png`
+- `index.html` - Update logo URL in Organization schema: `https://gold.yubrajchaudhary.com.np/logo.png`
 
 ### 2. Add Your Logo
 
@@ -55,11 +55,11 @@ Or push to your Git repository and let Vercel auto-deploy.
 2. Add your property (domain)
 3. Verify ownership
 4. Navigate to Sitemaps
-5. Submit: `https://goldsilvernepal.vercel.app/sitemap.xml`
+5. Submit: `https://gold.yubrajchaudhary.com.np/sitemap.xml`
 
 ### 2. Verify Robots.txt
 
-Check that `https://goldsilvernepal.vercel.app/robots.txt` is accessible and correct.
+Check that `https://gold.yubrajchaudhary.com.np/robots.txt` is accessible and correct.
 
 ### 3. Test Schema Markup
 
