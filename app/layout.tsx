@@ -30,7 +30,6 @@ export const metadata: Metadata = {
     canonical: 'https://gold.yubrajchaudhary.com.np/',
     languages: {
       en: 'https://gold.yubrajchaudhary.com.np/',
-      ne: 'https://gold.yubrajchaudhary.com.np/',
     },
   },
   icons: {
